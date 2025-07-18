@@ -32,8 +32,20 @@ ssim_ll_FEC = []
 #     muti = round(muti,1)
 raw_CAFEC = pd.read_csv(f'ssim_psnr_CAFEC.csv',header=None)#_{muti}
 raw_sFEC = pd.read_csv(f'ssim_psnr_FEC.csv',header=None)
+
+raw_CAFEC_3 = pd.read_csv(f'ssim_psnr_CAFEC_B=0.3_.csv',header=None)#_{muti}
+raw_CAFEC_5 = pd.read_csv(f'ssim_psnr_CAFEC_B=0.5_.csv',header=None)#_{muti}
+raw_CAFEC_7 = pd.read_csv(f'ssim_psnr_CAFEC_B=0.7_.csv',header=None)#_{muti}
+
 ssim_cafec,psnr_cafec = analyze_data(raw_CAFEC)
 ssim_sfec,psnr_sfec = analyze_data(raw_sFEC)
+
+ssim_cafec3,psnr_cafec3 = analyze_data(raw_CAFEC_3)
+ssim_cafec5,psnr_cafec5 = analyze_data(raw_CAFEC_5)
+ssim_cafec7,psnr_cafec7 = analyze_data(raw_CAFEC_7)
+
+
+
     # ssim_ll_CAFEC.append(ssim_cafec)
     # ssim_ll_FEC.append(ssim_sfec)
 
@@ -60,13 +72,13 @@ ssim_sfec,psnr_sfec = analyze_data(raw_sFEC)
 plt.figure(figsize=(8, 6))
 
 # 绘制第一条折线
-plt.plot(x, ssim_cafec, label='CAFEC', color='blue', linestyle='-', marker='o')
+plt.plot(x, ssim_cafec3, label='beta=0.3', color='blue', linestyle='-', marker='o')
 
 # 绘制第二条折线
-plt.plot(x, ssim_sfec, label='FEC', color='red', linestyle='--', marker='s')
+plt.plot(x, ssim_cafec5, label='beta=0.5', color='red', linestyle='--', marker='s')
 
 # # 绘制第三条折线
-# plt.plot(x, ssim_ll_CAFEC[2], label='0.5_CAFEC', color='green', linestyle='-.', marker='^')
+plt.plot(x, ssim_cafec7, label='beta=0.7', color='green', linestyle='-.', marker='^')
 
 # # 绘制第三条折线
 # plt.plot(x, ssim_ll_CAFEC[3], label='0.6_CAFEC', color='gray', linestyle='--', marker='*')
@@ -84,7 +96,7 @@ plt.plot(x, ssim_sfec, label='FEC', color='red', linestyle='--', marker='s')
 # plt.plot(x, ssim_ll_FEC[3], label='0.6_FEC', color='black', linestyle='--', marker='*')
 
 # 添加标题和标签
-plt.title('loss——ssim ', fontsize=16)
+#plt.title('loss——ssim ', fontsize=16)
 plt.xlabel('lossrate', fontsize=12)
 plt.ylabel('ssim', fontsize=12)
 
