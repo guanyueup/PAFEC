@@ -23,7 +23,8 @@ def analyze_data(raw_data):
         psnr_sum_dic[k] /= len(psnr) / 10
     return ssim_sum_dic.values(), psnr_sum_dic.values()
 
-x = np.linspace(0.01,0.1,10)
+loss_list = np.linspace(0.01,0.1,10)
+loss_list = [round(lr,2) for lr in loss_list]
 
 ssim_ll_CAFEC = []
 ssim_ll_FEC = []
@@ -33,9 +34,9 @@ ssim_ll_FEC = []
 raw_CAFEC = pd.read_csv(f'ssim_psnr_CAFEC.csv',header=None)#_{muti}
 raw_sFEC = pd.read_csv(f'ssim_psnr_FEC.csv',header=None)
 
-raw_CAFEC_3 = pd.read_csv(f'ssim_psnr_CAFEC_B=0.3_.csv',header=None)#_{muti}
-raw_CAFEC_5 = pd.read_csv(f'ssim_psnr_CAFEC_B=0.5_.csv',header=None)#_{muti}
-raw_CAFEC_7 = pd.read_csv(f'ssim_psnr_CAFEC_B=0.7_.csv',header=None)#_{muti}
+raw_CAFEC_3 = pd.read_csv(f'/Users/zhengzhaopeng/Desktop/FEC/muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_ca/ssim_psnr_FEC.csv',header=None)#_{muti}
+raw_CAFEC_5 = pd.read_csv(f'/Users/zhengzhaopeng/Desktop/FEC/muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_flex/ssim_psnr_FEC.csv',header=None)#_{muti}
+raw_CAFEC_7 = pd.read_csv(f'/Users/zhengzhaopeng/Desktop/FEC/muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_tooth/ssim_psnr_FEC.csv',header=None)#_{muti}
 
 ssim_cafec,psnr_cafec = analyze_data(raw_CAFEC)
 ssim_sfec,psnr_sfec = analyze_data(raw_sFEC)
@@ -45,7 +46,39 @@ ssim_cafec5,psnr_cafec5 = analyze_data(raw_CAFEC_5)
 ssim_cafec7,psnr_cafec7 = analyze_data(raw_CAFEC_7)
 
 
+# 设置柱状图的宽度和位置
+x = np.arange(len(loss_list))  # x 轴的位置
+bar_width = 0.25  # 每个柱的宽度
 
+#添加水平线
+# for y in np.linspace(5,40,8):
+#     plt.axhline(y=y, color='gray', linestyle='--', linewidth=1.5,zorder=0)
+
+print(np.max([(n1-n2) for n1,n2 in zip(psnr_cafec3,psnr_cafec5)]))
+print(np.mean([(n1-n2) for n1,n2 in zip(psnr_cafec3,psnr_cafec5)]))
+
+print(np.max([(n1-n2) for n1,n2 in zip(psnr_cafec3,psnr_cafec7)]))
+print(np.mean([(n1-n2) for n1,n2 in zip(psnr_cafec3,psnr_cafec7)]))
+# # 绘制柱状图
+# plt.bar(x + bar_width, ssim_cafec3, width=bar_width, label='CAFEC', color='green')
+# plt.bar(x - bar_width, ssim_cafec5, width=bar_width, label='FlexFEC', color='blue')
+# plt.bar(x, ssim_cafec7, width=bar_width, label='Tooth', color='orange')
+
+
+
+# # 添加 x 轴标签和标题
+# plt.xlabel('loss rate')
+# plt.ylabel('psnr')
+# #plt.title('Bar Chart Example')
+
+
+
+# # 添加图例
+# plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+
+# # 显示图表
+# plt.tight_layout()  # 自动调整布局
+# plt.show()
     # ssim_ll_CAFEC.append(ssim_cafec)
     # ssim_ll_FEC.append(ssim_sfec)
 
@@ -72,13 +105,13 @@ ssim_cafec7,psnr_cafec7 = analyze_data(raw_CAFEC_7)
 plt.figure(figsize=(8, 6))
 
 # 绘制第一条折线
-plt.plot(x, ssim_cafec3, label='beta=0.3', color='blue', linestyle='-', marker='o')
+plt.plot(x, ssim_cafec3, label='CAFEC', color='green', linestyle='-', marker='o')
 
 # 绘制第二条折线
-plt.plot(x, ssim_cafec5, label='beta=0.5', color='red', linestyle='--', marker='s')
+plt.plot(x, ssim_cafec5, label='FlexFEC', color='blue', linestyle='--', marker='s')
 
 # # 绘制第三条折线
-plt.plot(x, ssim_cafec7, label='beta=0.7', color='green', linestyle='-.', marker='^')
+plt.plot(x, ssim_cafec7, label='Tooth', color='orange', linestyle='-.', marker='^')
 
 # # 绘制第三条折线
 # plt.plot(x, ssim_ll_CAFEC[3], label='0.6_CAFEC', color='gray', linestyle='--', marker='*')
@@ -96,8 +129,10 @@ plt.plot(x, ssim_cafec7, label='beta=0.7', color='green', linestyle='-.', marker
 # plt.plot(x, ssim_ll_FEC[3], label='0.6_FEC', color='black', linestyle='--', marker='*')
 
 # 添加标题和标签
+# 设置 x 轴的刻度和标签
+plt.xticks(x, loss_list)
 #plt.title('loss——ssim ', fontsize=16)
-plt.xlabel('lossrate', fontsize=12)
+plt.xlabel('loss rate', fontsize=12)
 plt.ylabel('ssim', fontsize=12)
 
 # 添加图例

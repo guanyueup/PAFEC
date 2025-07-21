@@ -19,8 +19,8 @@ for loss in np.linspace(0.01,0.1,10):
     loss = round(loss,3)
     file_name1 = f'{loss}_loss_record.csv'
     file_name2 = f'{loss}_loss_record_o.csv'
-    l1 = get_list(file_name1,32)
-    l2 = get_list(file_name2,32)
+    l1 = get_list(file_name1,15)
+    l2 = get_list(file_name2,15)
     l1 = [i for i in l1 if i>0]
     l2 = [i for i in l2 if i>0]
     
@@ -67,8 +67,8 @@ for loss in np.linspace(0.01,0.1,10):
     print(x)
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    bars1 = ax.bar(x - width/2, counts1, width, label='GE', color='skyblue', alpha=0.8)
-    bars2 = ax.bar(x + width/2, counts2, width, label='mine', color='lightcoral', alpha=0.8)
+    bars1 = ax.bar(x - width/2, counts1, width, label='high burst', color='skyblue', alpha=0.8)
+    bars2 = ax.bar(x + width/2, counts2, width, label='low burst', color='lightcoral', alpha=0.8)
 
 
         # 百分比显示在柱子内部
@@ -86,9 +86,9 @@ for loss in np.linspace(0.01,0.1,10):
     add_percentage_labels_inside(bars1, percentages1)
     add_percentage_labels_inside(bars2, percentages2)
     # 设置标签和标题
-    ax.set_xlabel('number')
+    ax.set_xlabel('loss number')
     ax.set_ylabel('count')
-    ax.set_title('count analysis')
+    #ax.set_title('count analysis')
     ax.set_xticks(x)
     ax.set_xticklabels(all_numbers)
     ax.legend()
