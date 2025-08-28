@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS播放器测试 - CORS修复版</title>
+    
+    <!-- Video.js -->
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@videojs/http-streaming@3.10.0/dist/videojs-http-streaming.min.js"></script>
+    
+    <!-- HLS.js -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <style>
+        /* 保持之前的样式... */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .video-container {
+            margin-bottom: 30px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .video-js {
+            width: 100% !important;
+            height: auto !important;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-1px);
+        }
+        
+        .test-urls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .test-urls h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .url-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .url-item strong {
+            color: #007bff;
+        }
+        
+        .url-item code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        
+        .debug-panel {
+            background: #343a40;
+            color: #28a745;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+        
+        .debug-panel h3 {
+            color: #ffc107;
+            margin-top: 0;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .status-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .status-info h4 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        
+        .status-info p {
+            margin: 5px 0;
+            color: #424242;
+        }
+        
+        .cors-warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .cors-warning h4 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 HLS播放器测试工具 - CORS修复版</h1>
+        
+        <!-- CORS警告 -->
+        <div class="cors-warning">
+            <h4>⚠️ CORS问题说明</h4>
+            <p>如果您看到"Failed to fetch"错误，这是由于浏览器的CORS安全策略导致的。VLC等桌面播放器不受此限制。</p>
+            <p><strong>解决方案：</strong></p>
+            <ul>
+                <li>1. 点击"直接加载"跳过URL测试</li>
+                <li>2. 配置服务器支持CORS头</li>
+                <li>3. 使用浏览器扩展禁用CORS（仅开发环境）</li>
+            </ul>
+        </div>
+        
+        <!-- 状态信息 -->
+        <div class="status-info">
+            <h4>📊 系统状态</h4>
+            <p id="systemStatus">正在检查系统状态...</p>
+        </div>
+        
+        <!-- 测试URL -->
+        <div class="test-urls">
+            <h3>🔗 测试用HLS流地址</h3>
+            <div class="url-item">
+                <strong>Apple官方测试流 (支持CORS):</strong><br>
+                <code>https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8</code>
+            </div>
+            <div class="url-item">
+                <strong>您的本地流:</strong><br>
+                <code>http://9.134.173.35:5002/merged_multi_master.m3u8</code>
+            </div>
+        </div>
+        
+        <!-- 自定义URL输入 -->
+        <div class="input-group">
+            <input type="text" id="customUrl" placeholder="输入HLS URL..." 
+                   value="http://9.134.173.35:5002/merged_multi_master.m3u8">
+            <button class="btn btn-primary" onclick="loadCustomUrl()">测试URL</button>
+            <button class="btn btn-warning" onclick="forceLoadUrl()">直接加载</button>
+        </div>
+        
+        <!-- 播放器容器 -->
+        <div class="video-container">
+            <video-js
+                id="hlsPlayer"
+                class="video-js vjs-default-skin"
+                controls
+                preload="auto"
+                width="800"
+                height="450"
+                data-setup='{}'>
+                <p class="vjs-no-js">
+                    要观看此视频，请启用JavaScript，并考虑升级到支持HTML5视频的Web浏览器。
+                </p>
+            </video-js>
+        </div>
+        
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="testAppleStream()">测试Apple流</button>
+            <button class="btn btn-warning" onclick="forceLoadYourStream()">强制加载您的流</button>
+            <button class="btn btn-secondary" onclick="testWithHLSjs()">使用HLS.js</button>
+            <button class="btn btn-secondary" onclick="reloadPlayer()">重新加载播放器</button>
+            <button class="btn btn-success" onclick="openCORSHelper()">CORS帮助</button>
+        </div>
+        
+        <!-- 播放器信息 -->
+        <div class="status-info" id="playerInfo" style="display: none;">
+            <h4>🎮 播放器信息</h4>
+            <div id="playerDetails"></div>
+        </div>
+        
+        <!-- 调试面板 -->
+        <div class="debug-panel">
+            <h3>🐛 调试信息</h3>
+            <div id="debugLog">系统初始化中...</div>
+        </div>
+    </div>
+
+    <script>
+        class HLSPlayerTester {
+            constructor() {
+                this.player = null;
+                this.hlsInstance = null;
+                this.debugLog = document.getElementById('debugLog');
+                this.playerInfo = document.getElementById('playerInfo');
+                this.playerDetails = document.getElementById('playerDetails');
+                this.systemStatus = document.getElementById('systemStatus');
+                
+                this.init();
+            }
+            
+            init() {
+                this.log('🚀 HLS播放器测试工具启动 - CORS修复版');
+                this.checkSystemStatus();
+                this.initializePlayer();
+            }
+            
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}`;
+                console.log(logMessage);
+                
+                if (this.debugLog) {
+                    this.debugLog.innerHTML += `<br>${logMessage}`;
+                    this.debugLog.scrollTop = this.debugLog.scrollHeight;
+                }
+            }
+            
+            checkSystemStatus() {
+                let status = [];
+                
+                // 检查Video.js
+                if (typeof videojs !== 'undefined') {
+                    status.push(`✅ Video.js ${videojs.VERSION}`);
+                } else {
+                    status.push('❌ Video.js 未加载');
+                }
+                
+                // 检查HLS.js
+                if (typeof Hls !== 'undefined') {
+                    status.push(`✅ HLS.js ${Hls.version}`);
+                    status.push(`HLS.js支持: ${Hls.isSupported() ? '✅' : '❌'}`);
+                } else {
+                    status.push('❌ HLS.js 未加载');
+                }
+                
+                // 检查原生HLS支持
+                const video = document.createElement('video');
+                const nativeSupport = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+                status.push(`原生HLS: ${nativeSupport ? '✅' : '❌'}`);
+                
+                // 检查协议
+                const isHTTPS = location.protocol === 'https:';
+                status.push(`HTTPS: ${isHTTPS ? '✅' : '❌'}`);
+                
+                this.systemStatus.innerHTML = status.join(' | ');
+                this.log('系统检查完成');
+            }
+            
+            initializePlayer() {
+                this.log('🎬 初始化Video.js播放器');
+                
+                try {
+                    // 销毁现有播放器
+                    if (this.player) {
+                        this.player.dispose();
+                        this.player = null;
+                    }
+                    
+                    if (this.hlsInstance) {
+                        this.hlsInstance.destroy();
+                        this.hlsInstance = null;
+                    }
+                    
+                    // 创建新播放器 - 修改配置以更好支持跨域
+                    this.player = videojs('hlsPlayer', {
+                        fluid: true,
+                        responsive: true,
+                        controls: true,
+                        preload: 'auto',
+                        html5: {
+                            vhs: {
+                                overrideNative: true,
+                                enableLowInitialPlaylist: false,
+                                smoothQualityChange: false,
+                                withCredentials: false,  // 关闭凭证
+                                useCueTags: false,
+                                allowSeeksWithinUnsafeLiveWindow: true
+                            }
+                        },
+                        // 添加跨域支持
+                        crossOrigin: 'anonymous'
+                    });
+                    
+                    // 绑定播放器事件
+                    this.bindPlayerEvents();
+                    
+                    this.log('✅ 播放器初始化成功');
+                    
+                } catch (error) {
+                    this.log(`❌ 播放器初始化失败: ${error.message}`);
+                    console.error('播放器初始化错误:', error);
+                }
+            }
+            
+            bindPlayerEvents() {
+                if (!this.player) return;
+                
+                this.player.ready(() => {
+                    this.log('✅ 播放器准备就绪');
+                });
+                
+                this.player.on('loadstart', () => {
+                    this.log('📺 开始加载视频');
+                });
+                
+                this.player.on('loadedmetadata', () => {
+                    this.log('📊 视频元数据已加载');
+                    this.updatePlayerInfo();
+                });
+                
+                this.player.on('canplay', () => {
+                    this.log('✅ 视频可以播放');
+                });
+                
+                this.player.on('playing', () => {
+                    this.log('▶️ 视频开始播放');
+                });
+                
+                this.player.on('error', (e) => {
+                    const error = this.player.error();
+                    this.log(`❌ 播放器错误: ${error ? error.message : '未知错误'}`);
+                    this.log(`错误代码: ${error ? error.code : 'N/A'}`);
+                    console.error('播放器错误详情:', error);
+                    
+                    // 如果是网络错误，建议使用HLS.js
+                    if (error && (error.code === 2 || error.code === 4)) {
+                        this.log('💡 建议：尝试使用HLS.js播放');
+                    }
+                });
+            }
+            
+            // 跳过URL测试，直接加载
+            forceLoadStream(url, description = '') {
+                this.log(`🚀 强制加载HLS流: ${description || url}`);
+                this.log('⚠️ 跳过CORS检查，直接尝试播放');
+                
+                if (!this.player) {
+                    this.log('❌ 播放器未初始化');
+                    return;
+                }
+                
+                try {
+                    // 直接使用Video.js加载，不进行预检查
+                    this.player.src({
+                        src: url,
+                        type: 'application/x-mpegURL'
+                    });
+                    
+                    this.player.ready(() => {
+                        this.log('🎬 尝试播放...');
+                        const playPromise = this.player.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                this.log('▶️ 播放成功！');
+                            }).catch(error => {
+                                this.log(`❌ 播放失败: ${error.message}`);
+                                this.log('💡 尝试使用HLS.js...');
+                                this.forceLoadWithHLSjs(url);
+                            });
+                        }
+                    });
+                    
+                } catch (error) {
+                    this.log(`❌ 加载失败: ${error.message}`);
+                    this.log('💡 尝试使用HLS.js...');
+                    this.forceLoadWithHLSjs(url);
+                }
+            }
+            
+            // 强制使用HLS.js，跳过检查
+            forceLoadWithHLSjs(url) {
+                this.log('🔧 强制使用HLS.js播放（跳过支持检查）');
+                
+                if (typeof Hls === 'undefined') {
+                    this.log('❌ HLS.js未加载');
+                    return;
+                }
+                
+                const video = document.getElementById('hlsPlayer_html5_api') || 
+                             document.querySelector('#hlsPlayer video');
+                
+                if (!video) {
+                    this.log('❌ 找不到video元素');
+                    return;
+                }
+                
+                // 销毁现有HLS实例
+                if (this.hlsInstance) {
+                    this.hlsInstance.destroy();
+                }
+                
+                this.hlsInstance = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    // 关键：配置跨域请求
+                    xhrSetup: function(xhr, url) {
+                        // 不发送凭证
+                        xhr.withCredentials = false;
+                    },
+                    // 添加更多容错配置
+                    manifestLoadingTimeOut: 10000,
+                    manifestLoadingMaxRetry: 4,
+                    manifestLoadingRetryDelay: 500,
+                    levelLoadingTimeOut: 10000,
+                    levelLoadingMaxRetry: 4,
+                    fragLoadingTimeOut: 20000,
+                    fragLoadingMaxRetry: 6
+                });
+                
+                this.hlsInstance.loadSource(url);
+                this.hlsInstance.attachMedia(video);
+                
+                this.hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                    this.log(`✅ HLS.js清单解析成功: ${data.levels.length} 个质量级别`);
+                    data.levels.forEach((level, index) => {
+                        this.log(`质量 ${index}: ${level.width}x${level.height} @ ${Math.round(level.bitrate/1000)}kbps`);
+                    });
+                    
+                    video.play().then(() => {
+                        this.log('▶️ HLS.js播放成功！');
+                    }).catch(e => {
+                        this.log(`❌ HLS.js播放失败: ${e.message}`);
+                    });
+                });
+                
+                this.hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+                    this.log(`❌ HLS.js错误: ${data.type} - ${data.details}`);
+                    console.error('HLS.js详细错误:', data);
+                    
+                    if (data.fatal) {
+                        this.log('💀 致命错误，无法继续播放');
+                        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                            this.log('🌐 网络错误，可能是CORS问题');
+                        }
+                    }
+                });
+                
+                this.hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+                    this.log(`🔄 切换到质量级别: ${data.level}`);
+                });
+            }
+            
+            // 保持原有的测试URL功能
+            async loadStream(url, description = '') {
+                this.log(`🎬 加载HLS流: ${description || url}`);
+                
+                if (!this.player) {
+                    this.log('❌ 播放器未初始化');
+                    return;
+                }
+                
+                try {
+                    // 测试URL可访问性
+                    const isAccessible = await this.testUrl(url);
+                    if (!isAccessible) {
+                        this.log(`❌ URL预检查失败，但仍尝试播放...`);
+                    }
+                    
+                    this.forceLoadStream(url, description);
+                    
+                } catch (error) {
+                    this.log(`❌ 加载流失败: ${error.message}`);
+                }
+            }
+            
+            async testUrl(url) {
+                try {
+                    const response = await fetch(url, { 
+                        method: 'HEAD',
+                        mode: 'cors'
+                    });
+                    this.log(`URL测试: ${response.status} ${response.statusText}`);
+                    return response.ok;
+                } catch (error) {
+                    this.log(`URL测试失败: ${error.message}`);
+                    return false;
+                }
+            }
+            
+            updatePlayerInfo() {
+                // 保持原有功能...
+                if (!this.player) return;
+                
+                try {
+                    let info = [];
+                    
+                    const duration = this.player.duration();
+                    if (duration) {
+                        info.push(`时长: ${Math.round(duration)}秒`);
+                    }
+                    
+                    const videoWidth = this.player.videoWidth();
+                    const videoHeight = this.player.videoHeight();
+                    if (videoWidth && videoHeight) {
+                        info.push(`分辨率: ${videoWidth}x${videoHeight}`);
+                    }
+                    
+                    if (info.length > 0) {
+                        this.playerDetails.innerHTML = info.map(item => `<p>${item}</p>`).join('');
+                        this.playerInfo.style.display = 'block';
+                    }
+                    
+                } catch (error) {
+                    this.log(`更新播放器信息失败: ${error.message}`);
+                }
+            }
+        }
+        
+        // 创建测试实例
+        const tester = new HLSPlayerTester();
+        
+        // 全局函数
+        function testAppleStream() {
+            tester.loadStream(
+                'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+                'Apple官方测试流'
+            );
+        }
+        
+        function loadCustomUrl() {
+            const url = document.getElementById('customUrl').value.trim();
+            if (url) {
+                tester.loadStream(url, '自定义URL');
+            } else {
+                tester.log('❌ 请输入有效的URL');
+            }
+        }
+        
+        function forceLoadUrl() {
+            const url = document.getElementById('customUrl').value.trim();
+            if (url) {
+                tester.forceLoadStream(url, '自定义URL（强制加载）');
+            } else {
+                tester.log('❌ 请输入有效的URL');
+            }
+        }
+        
+        function forceLoadYourStream() {
+            const url = 'http://9.134.173.35:5002/merged_multi_master.m3u8';
+            tester.forceLoadStream(url, '您的HLS流（强制加载）');
+        }
+        
+        function testWithHLSjs() {
+            const url = document.getElementById('customUrl').value.trim() || 
+                       'http://9.134.173.35:5002/merged_multi_master.m3u8';
+            tester.forceLoadWithHLSjs(url);
+        }
+        
+        function reloadPlayer() {
+            tester.log('🔄 重新加载播放器');
+            tester.initializePlayer();
+        }
+        
+        function openCORSHelper() {
+            const helpText = `
+CORS问题解决方案：
+
+1. 服务器端配置（推荐）：
+   在你的HLS服务器上添加以下响应头：
+   Access-Control-Allow-Origin: *
+   Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+   Access-Control-Allow-Headers: *
+
+2. 开发环境浏览器扩展：
+   - Chrome: "CORS Unblock" 扩展
+   - Firefox: "CORS Everywhere" 扩展
+
+3. 命令行启动Chrome（仅开发）：
+   chrome --disable-web-security --user-data-dir=/tmp/chrome_dev
+
+4. 使用代理服务器
+
+您的URL: http://9.134.173.35:5002/merged_multi_master.m3u8
+建议先点击"直接加载"尝试播放。
+            `;
+            alert(helpText);
+        }
+        
+        // 页面加载完成自动设置
+        document.addEventListener('DOMContentLoaded', function() {
+            tester.log('📄 页面加载完成');
+            tester.log('💡 如果遇到CORS错误，请点击"直接加载"或"强制加载您的流"按钮');
+        });
+    </script>
+</body>
+</html>
