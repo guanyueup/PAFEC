@@ -5,9 +5,9 @@ from collections import Counter
 import os
 import matplotlib.pyplot as plt
 
-flex_path = '/Users/zhengzhaopeng/Desktop/FEC/muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_flex/'
-tooth_path = '/Users/zhengzhaopeng/Desktop/FEC/muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_tooth/'
-ca_path = '/Users/zhengzhaopeng/Desktop/FEC/muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_ca/'
+flex_path = './muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_flex/'
+tooth_path = './muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_tooth/'
+ca_path = './muti_lr_1.0_muti_rr_1.5_muti_pace_1.0_count_pace_12_p_ratio_0.1_bottom_0.6_alpha_0.5_1080P_ca/'
 path_list = [flex_path,tooth_path,ca_path]
 def get_data(file):
     list_1 = []
@@ -74,31 +74,31 @@ for lr in loss_list:
 
 np.min([(n1-n2)/n1*100 for n1,n2 in zip(flex_first,ca_first)])
 
-# # 设置柱状图的宽度和位置
-# x = np.arange(len(loss_list))  # x 轴的位置
-# bar_width = 0.25  # 每个柱的宽度
+# 设置柱状图的宽度和位置
+x = np.arange(len(loss_list))  # x 轴的位置
+bar_width = 0.25  # 每个柱的宽度
 
-# #添加水平线
-# for y in np.linspace(0.0025,0.0225,9):
-#     plt.axhline(y=y, color='gray', linestyle='--', linewidth=1.5,zorder=0)
+#添加水平线
+for y in np.linspace(0.0025,0.0225,9):
+    plt.axhline(y=y, color='gray', linestyle='--', linewidth=1.5,zorder=0)
 
-# # 绘制柱状图
-# plt.bar(x - bar_width, flex_first, width=bar_width, label='FlexFEC', color='blue')
-# plt.bar(x, tooth_first, width=bar_width, label='Tooth', color='orange')
-# plt.bar(x + bar_width, ca_first, width=bar_width, label='CAFEC', color='green')
+# 绘制柱状图
+plt.bar(x - bar_width, flex_first, width=bar_width, label='FlexFEC', color='blue')
+plt.bar(x, tooth_first, width=bar_width, label='Tooth', color='orange')
+plt.bar(x + bar_width, ca_first, width=bar_width, label='CAFEC', color='green')
 
 
-# # 添加 x 轴标签和标题
-# plt.xlabel('loss rate')
-# plt.ylabel('avg loss number')
-# #plt.title('Bar Chart Example')
+# 添加 x 轴标签和标题
+plt.xlabel('loss rate')
+plt.ylabel('avg loss number')
+#plt.title('Bar Chart Example')
 
-# # 设置 x 轴的刻度和标签
-# plt.xticks(x, loss_list)
+# 设置 x 轴的刻度和标签
+plt.xticks(x, loss_list)
 
-# # 添加图例
-# plt.legend()
+# 添加图例
+plt.legend()
 
-# # 显示图表
-# plt.tight_layout()  # 自动调整布局
-# plt.show()
+# 显示图表
+plt.tight_layout()  # 自动调整布局
+plt.show()
